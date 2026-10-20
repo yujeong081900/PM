@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>PhotoSpot - 대화형 네컷사진 부스지도 & 포즈 가이드</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+
+  <!-- Leaflet Map Engine CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-highest": "#e3e2e6",
+            "on-primary-fixed-variant": "#5a00c6",
+            "tertiary-container": "#006e95",
+            "surface-bright": "#faf9fd",
+            "outline-variant": "#ccc3d8",
+            "primary-fixed": "#eaddff",
+            "error": "#ba1a1a",
+            "on-secondary": "#ffffff",
+            "on-surface": "#1b1b1f",
+            "surface-container": "#efedf1",
+            "on-secondary-container": "#620029",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#e9e7ec",
+            "on-background": "#1b1b1f",
+            "secondary-container": "#fd5c8c",
+            "error-container": "#ffdad6",
+            "inverse-on-surface": "#f2f0f4",
+            "on-secondary-fixed": "#3f0018",
+            "tertiary-fixed": "#c4e7ff",
+            "secondary-fixed": "#ffd9df",
+            "tertiary": "#005574",
+            "on-secondary-fixed-variant": "#8f003f",
+            "surface-variant": "#e3e2e6",
+            "on-tertiary-container": "#caeaff",
+            "surface-tint": "#732ee4",
+            "secondary": "#b22156",
+            "surface-dim": "#dbd9dd",
+            "primary-container": "#7c3aed",
+            "on-primary-container": "#ede0ff",
+            "on-primary-fixed": "#25005a",
+            "tertiary-fixed-dim": "#7bd0ff",
+            "surface-container-low": "#f5f3f7",
+            "on-error-container": "#93000a",
+            "primary-fixed-dim": "#d2bbff",
+            "surface": "#faf9fd",
+            "background": "#faf9fd",
+            "outline": "#7b7487",
+            "secondary-fixed-dim": "#ffb1c1",
+            "primary": "#630ed4",
+            "on-surface-variant": "#4a4455",
+            "inverse-primary": "#d2bbff",
+            "on-tertiary-fixed-variant": "#004c69",
+            "on-error": "#ffffff", 
+            "on-tertiary-fixed": "#001e2c",
+            "on-tertiary": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "inverse-surface": "#2f3034"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          spacing: {
+            "space-sm": "0.75rem",
+            "space-lg": "1.25rem",
+            "space-2xs": "0.25rem",
+            "gutter-sm": "0.75rem",
+            "margin-mobile": "1rem",
+            "space-xs": "0.5rem",
+            "space-2xl": "2.5rem",
+            "margin": "1.25rem",
+            "space-md": "1rem",
+            "space-xl": "1.75rem",
+            "gutter": "1rem"
+          },
+          fontFamily: {
+            "caption": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-md": ["Space Grotesk", "sans-serif"],
+            "label-md": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-lg-mobile": ["Space Grotesk", "sans-serif"],
+            "label-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "body-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "body-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "display-hero": ["Space Grotesk", "sans-serif"],
+            "headline-lg": ["Space Grotesk", "sans-serif"],
+            "headline-sm": ["Space Grotesk", "sans-serif"],
+            "body-md": ["Plus Jakarta Sans", "sans-serif"],
+            "display-hero-mobile": ["Space Grotesk", "sans-serif"],
+            "label-sm": ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Leaflet JS Library -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    @layer base {
+      html, body {
+        width: 100vw;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
+      body {
+        overscroll-behavior: none;
+      }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
+      .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+    }
+    ::-webkit-scrollbar { display: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .view-section {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.25s ease-in-out;
+    }
+    .view-section.active {
+      display: flex;
+      opacity: 1;
+    }
+    .toast-animate {
+      animation: toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes toastSlideUp {
+      from { transform: translateY(100%) scale(0.9); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    /* Custom Leaflet Map Pin Styles */
+    .leaflet-control-container .leaflet-routing-container-hide { display: none; }
+    .leaflet-touch .leaflet-control-attribution { display: none; }
+    .leaflet-container {
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+      background: #f4f3f8 !important;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .booth-marker-pin {
+      transition: transform 0.2s ease, filter 0.2s ease;
+      cursor: pointer;
+    }
+    .booth-marker-pin:hover {
+      transform: scale(1.12) translateY(-3px);
+      z-index: 1000 !important;
+    }
+  </style>
+</head>
+
+<body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen">
+
+  <header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe">
+    <div class="h-14 px-margin-mobile flex items-center justify-between max-w-lg mx-auto">
+      <div class="flex items-center gap-space-xs">
+        <button id="navBackBtn" aria-label="뒤로가기" class="hidden w-10 h-10 -ml-2 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container transition-colors" onclick="switchView('booth-map')">
+          <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+        </button>
+        <span class="font-headline-sm text-headline-sm text-primary font-bold tracking-tight" id="appHeaderLogo">PhotoSpot</span>
+        
+        <button id="locationPickerBtn" onclick="recenterToUserLocation()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-surface-container-high/70 text-on-surface hover:bg-surface-container-high transition-colors min-h-[38px] active:scale-95">
+          <span class="material-symbols-outlined text-[15px] text-primary" style="font-variation-settings: 'FILL' 1;">my_location</span>
+          <span class="font-label-md text-label-md font-semibold" id="locationLabel">강남역 10번 출구</span>
+          <span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_drop_down</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <button aria-label="알림" onclick="showToast('🔔 주변 부스 신규 프레임 3개가 추가되었습니다!')" class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container transition-colors relative">
+          <span class="material-symbols-outlined text-[22px]">notifications</span>
+          <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-secondary"></span>
+        </button>
+        <img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 shadow-xs cursor-pointer" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" onclick="switchView('my-album')"/>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex flex-col relative w-full pt-14 pb-28 bg-surface min-h-screen max-w-lg mx-auto shadow-sm">
+
+    <section id="view-map" class="view-section active flex-col w-full relative">
+      <div class="sticky top-0 z-20 bg-surface/90 backdrop-blur-xl pb-space-xs pt-space-2xs px-margin-mobile flex flex-col gap-2 border-b border-black/5">
+        <!-- Brand Chips Carousel -->
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-margin-mobile px-margin-mobile">
+          <button class="brand-chip active flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-headline-sm text-label-md shrink-0 shadow-sm transition-all" data-brand="all" onclick="filterBrand('all', this)">
+            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+            <span>전체</span>
+            <span class="font-caption text-caption opacity-80 ml-0.5" id="totalBoothCount">15</span>
+          </button>
+          <button class="brand-chip flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-container-lowest text-on-surface font-headline-sm text-label-md shrink-0 shadow-sm hover:bg-surface-container transition-all border border-black/5" data-brand="haru" onclick="filterBrand('haru', this)">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#00A3FF]"></span>
+            <span>하루필름</span>
+          </button>
+          <button class="brand-chip flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-container-lowest text-on-surface font-headline-sm text-label-md shrink-0 shadow-sm hover:bg-surface-container transition-all border border-black/5" data-brand="life4" onclick="filterBrand('life4', this)">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#FF2D78]"></span>
+            <span>인생네컷</span>
+          </button>
+          <button class="brand-chip flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-container-lowest text-on-surface font-headline-sm text-label-md shrink-0 shadow-sm hover:bg-surface-container transition-all border border-black/5" data-brand="photoism" onclick="filterBrand('photoism', this)">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#1F2937]"></span>
+            <span>포토이즘</span>
+          </button>
+          <button class="brand-chip flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-container-lowest text-on-surface font-headline-sm text-label-md shrink-0 shadow-sm hover:bg-surface-container transition-all border border-black/5" data-brand="dontlook" onclick="filterBrand('dontlook', this)">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#FF5722]"></span>
+            <span>돈룩업</span>
+          </button>
+          <button class="brand-chip flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-container-lowest text-on-surface font-headline-sm text-label-md shrink-0 shadow-sm hover:bg-surface-container transition-all border border-black/5" data-brand="monomansion" onclick="filterBrand('monomansion', this)">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#92400E]"></span>
+            <span>모노맨션</span>
+          </button>
+        </div>
+
+        <!-- Keyword Hash Filter Tags -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-margin-mobile px-margin-mobile">
+          <button class="filter-tag px-3 py-1 rounded-full bg-surface-container-high/80 text-on-surface-variant font-label-md text-label-md shrink-0 hover:bg-surface-container-highest transition-colors active:scale-95" onclick="toggleTagFilter(this, 'airwrap')">
+            ✨ #에어랩구비
+          </button>
+          <button class="filter-tag px-3 py-1 rounded-full bg-surface-container-high/80 text-on-surface-variant font-label-md text-label-md shrink-0 hover:bg-surface-container-highest transition-colors active:scale-95" onclick="toggleTagFilter(this, 'cooltone')">
+            💙 #쿨톤필터
+          </button>
+          <button class="filter-tag px-3 py-1 rounded-full bg-surface-container-high/80 text-on-surface-variant font-label-md text-label-md shrink-0 hover:bg-surface-container-highest transition-colors active:scale-95" onclick="toggleTagFilter(this, 'props')">
+            🎀 #소품부자
+          </button>
+          <button class="filter-tag px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-md text-label-md shrink-0 active:scale-95" onclick="toggleTagFilter(this, 'new')">
+            🔥 #신규오픈
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1.5 pb-0.5 border-t border-black/5 -mx-margin-mobile px-margin-mobile">
+          <span class="font-caption text-caption text-on-surface-variant shrink-0 font-bold flex items-center gap-0.5">
+            <span class="material-symbols-outlined text-[14px] text-primary">explore</span> 주요 상권:
+          </span>
+          <button onclick="flyToRegion('gangnam')" class="region-jump-btn active px-3 py-1 rounded-full bg-primary text-on-primary font-label-sm text-label-sm shrink-0 shadow-xs flex items-center gap-1 active:scale-95 transition-all" data-region="gangnam">
+            <span>🔥 강남역</span>
+          </button>
+          <button onclick="flyToRegion('hongdae')" class="region-jump-btn px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm shrink-0 flex items-center gap-1 active:scale-95 transition-all hover:bg-surface-container-highest" data-region="hongdae">
+            <span>🎨 홍대/연남</span>
+          </button>
+          <button onclick="flyToRegion('seongsu')" class="region-jump-btn px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm shrink-0 flex items-center gap-1 active:scale-95 transition-all hover:bg-surface-container-highest" data-region="seongsu">
+            <span>✨ 성수동</span>
+          </button>
+          <button onclick="flyToRegion('itaewon')" class="region-jump-btn px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm shrink-0 flex items-center gap-1 active:scale-95 transition-all hover:bg-surface-container-highest" data-region="itaewon">
+            <span>🍸 이태원</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="relative w-full h-[calc(100vh-210px)] min-h-[460px] transition-all duration-300 overflow-hidden select-none" id="mapViewport">
+        <div id="leafletMap" class="w-full h-full z-10"></div>
+
+        <!-- Floating Map Controls Overlay -->
+        <div class="absolute right-4 top-4 flex flex-col gap-2 z-20">
+          <button onclick="zoomMap(1)" aria-label="지도 확대" class="w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface shadow-[0_6px_16px_rgba(0,0,0,0.15)] flex items-center justify-center active:scale-90 transition-all hover:bg-surface-container border border-black/5">
+            <span class="material-symbols-outlined text-[22px]">add</span>
+          </button>
+          <button onclick="zoomMap(-1)" aria-label="지도 축소" class="w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface shadow-[0_6px_16px_rgba(0,0,0,0.15)] flex items-center justify-center active:scale-90 transition-all hover:bg-surface-container border border-black/5">
+            <span class="material-symbols-outlined text-[22px]">remove</span>
+          </button>
+          <button onclick="recenterToUserLocation()" aria-label="내 위치 및 줌 리셋" class="w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-primary shadow-[0_6px_16px_rgba(0,0,0,0.15)] flex items-center justify-center active:scale-90 transition-all hover:bg-surface-container border border-black/5">
+            <span class="material-symbols-outlined text-[22px]">my_location</span>
+          </button>
+          <button id="toggleFullscreenBtn" onclick="toggleFullscreenMap()" aria-label="지도 크게 전체 화면 보기" class="w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface shadow-[0_6px_16px_rgba(0,0,0,0.15)] flex items-center justify-center active:scale-90 transition-all hover:bg-surface-container border border-black/5">
+            <span class="material-symbols-outlined text-[20px]" id="fullscreenIcon">open_in_full</span>
+          </button>
+          <button aria-label="목록형 보기" class="w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface-variant shadow-[0_6px_16px_rgba(0,0,0,0.15)] flex items-center justify-center active:scale-90 transition-all hover:bg-surface-container border border-black/5" onclick="switchView('booth-search')">
+            <span class="material-symbols-outlined text-[20px]">format_list_bulleted</span>
+          </button>
+        </div>
+
+        <div class="absolute top-4 left-1/2 -translate-x-1/2 z-20 transition-all duration-300 opacity-0 pointer-events-none scale-95" id="researchAreaBtnContainer">
+          <button onclick="triggerAreaResearch()" class="px-4 py-2 rounded-full bg-primary text-on-primary font-headline-sm text-label-md font-bold shadow-[0_8px_24px_rgba(99,14,212,0.45)] flex items-center gap-1.5 active:scale-95 transition-all">
+            <span class="material-symbols-outlined text-[18px]">refresh</span>
+            <span>이 지도 범위에서 재검색</span>
+          </button>
+        </div>
+
+        <div class="absolute left-4 top-4 z-20 flex flex-col gap-1.5 pointer-events-none">
+          <div class="px-3 py-1.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md shadow-sm border border-black/5 flex items-center gap-1.5 pointer-events-auto">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span class="font-label-sm text-label-sm text-on-surface"><span id="activeRegionName">강남</span> 상권: <strong class="text-primary font-bold">실시간 쾌적</strong></span>
+          </div>
+          <div class="self-start px-2.5 py-0.5 rounded-full bg-inverse-surface/80 backdrop-blur-md text-inverse-on-surface font-caption text-[11px]" id="zoomScaleBadge">
+            줌 Level: 16 (도로/건물뷰)
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Sheet Drawer for Booth Popup -->
+      <div id="boothPopupDrawer" class="fixed bottom-[78px] inset-x-0 z-30 px-margin-mobile max-w-lg mx-auto transition-all duration-300 transform translate-y-full opacity-0 pointer-events-none">
+        <div class="bg-surface-container-lowest/95 backdrop-blur-2xl rounded-3xl p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] relative border border-black/10 max-h-[62vh] overflow-y-auto no-scrollbar">
+          
+          <!-- Drawer Handle & Close Button -->
+          <div class="flex items-center justify-between mb-2">
+            <div class="w-10 h-1 bg-surface-container-highest rounded-full mx-auto -mr-6"></div>
+            <button onclick="closeBoothDrawer()" aria-label="팝업 닫기" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+
+          <!-- Booth Title & Header Info -->
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <span id="selectedBrandBadge" class="px-2.5 py-0.5 rounded-md bg-[#00A3FF]/10 text-[#00A3FF] font-headline-sm text-label-sm font-bold">
+                  하루필름
+                </span>
+                <span class="font-caption text-caption text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full flex items-center gap-1" id="selectedDistance">
+                  <span class="material-symbols-outlined text-[12px] text-primary" style="font-variation-settings: 'FILL' 1;">near_me</span> 120m
+                </span>
+              </div>
+              <h2 id="selectedBoothTitle" class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mt-1 tracking-tight truncate">
+                하루필름 강남대로점
+              </h2>
+              <div class="flex items-center gap-2 mt-1">
+                <div class="flex items-center text-amber-500">
+                  <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+                  <span class="font-headline-sm text-label-md text-on-surface ml-0.5 font-bold" id="selectedRating">4.9</span>
+                </div>
+                <span class="text-outline-variant font-caption text-caption">•</span>
+                <span class="font-body-sm text-body-sm text-on-surface-variant" id="selectedReviews">방문 리뷰 1,280+</span>
+                <span class="text-outline-variant font-caption text-caption">•</span>
+                <span class="font-label-sm text-label-sm text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold" id="selectedStatus">대기 없음 (2대 여유)</span>
+              </div>
+            </div>
+
+            <button aria-label="즐겨찾기" onclick="toggleFavorite(this)" class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-secondary hover:bg-secondary-fixed transition-colors shrink-0">
+              <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+            </button>
+          </div>
+
+          <!-- Feature Highlight Badges -->
+          <div class="flex flex-wrap gap-1.5 mb-3" id="selectedBadges">
+            <span class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-on-surface-variant">⚡ 다이슨 에어랩 구비</span>
+            <span class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-on-surface-variant">🩵 시그니처 딥블루 4룸</span>
+            <span class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-on-surface-variant">👒 Y2K 헤드폰 &amp; 인형모자 40종</span>
+          </div>
+
+          <!-- Live Photo Strip Feed Preview -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="font-headline-sm text-label-md text-on-surface font-semibold flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px] text-primary">photo_library</span> 최근 사용자 프레임
+              </span>
+              <span class="font-caption text-caption text-on-surface-variant">오늘 34개 촬영됨</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div class="flex flex-col bg-surface-container-low p-1.5 rounded-xl shadow-xs cursor-pointer hover:opacity-90 transition-opacity" onclick="switchView('booth-detail')">
+                <div class="aspect-[3/4] rounded-lg overflow-hidden relative">
+                  <img class="w-full h-full object-cover" alt="Photobooth strip result" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80"/>
+                  <span class="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[9px] text-white font-caption">12분 전</span>
+                </div>
+              </div>
+
+              <div class="flex flex-col bg-surface-container-low p-1.5 rounded-xl shadow-xs cursor-pointer hover:opacity-90 transition-opacity" onclick="switchView('booth-detail')">
+                <div class="aspect-[3/4] rounded-lg overflow-hidden relative">
+                  <img class="w-full h-full object-cover" alt="Couple pose result" src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=300&q=80"/>
+                  <span class="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[9px] text-white font-caption">28분 전</span>
+                </div>
+              </div>
+
+              <div class="flex flex-col bg-surface-container-low p-1.5 rounded-xl shadow-xs cursor-pointer hover:opacity-90 transition-opacity" onclick="switchView('booth-detail')">
+                <div class="aspect-[3/4] rounded-lg overflow-hidden relative">
+                  <img class="w-full h-full object-cover" alt="Monochrome photobooth strip" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80"/>
+                  <span class="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[9px] text-white font-caption">45분 전</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2.5 pt-1">
+            <button onclick="openRouteFinderFromSelected()" class="flex-1 py-2.5 px-4 rounded-full bg-primary text-on-primary font-headline-sm text-label-md font-bold flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all hover:bg-primary-container">
+              <span class="material-symbols-outlined text-[18px]">directions_walk</span>
+              <span>지금 길찾기</span>
+            </button>
+            <button onclick="switchView('booth-detail')" class="py-2.5 px-4 rounded-full bg-surface-container text-on-surface font-headline-sm text-label-md flex items-center justify-center gap-1 active:scale-[0.98] transition-all hover:bg-surface-container-high">
+              <span>상세 정보</span>
+              <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-search" class="view-section flex-col w-full px-margin-mobile pt-space-xs">
+      <div class="mb-4">
+        <div class="relative flex items-center w-full">
+          <span class="material-symbols-outlined absolute left-3.5 text-on-surface-variant text-[20px]">search</span>
+          <input type="text" placeholder="부스명, 지점명, 특이 소품 검색..." class="w-full pl-10 pr-10 py-2.5 rounded-full bg-surface-container-low border border-outline-variant/40 font-body-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50" oninput="filterSearchList(this.value)"/>
+          <button class="absolute right-3 text-on-surface-variant" onclick="showToast('🎛️ 거리순 / 대기시간순 정렬 필터 적용')">
+            <span class="material-symbols-outlined text-[20px]">tune</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between mb-3">
+        <span class="font-label-lg text-label-lg font-bold text-on-surface">주변 탐색 결과 (15개)</span>
+        <span class="font-caption text-caption text-on-surface-variant">거리순 • 전체 지역</span>
+      </div>
+
+      <div class="space-y-3" id="searchCardsList"></div>
+    </section>
+
+    <section id="view-pose" class="view-section flex-col w-full px-margin-mobile pt-space-xs space-y-4">
+      <div class="bg-gradient-to-r from-primary/10 to-secondary/10 p-4 rounded-2xl flex items-center justify-between">
+        <div>
+          <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">네컷사진 포즈 가이드 📸</h2>
+          <p class="font-caption text-caption text-on-surface-variant mt-0.5">인기 트렌드 &amp; 커플/우정 꿀조합 포즈 모음</p>
+        </div>
+        <span class="material-symbols-outlined text-primary text-[32px]">style</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-surface-container-lowest p-3 rounded-2xl border border-black/5 shadow-xs cursor-pointer hover:shadow-md transition-shadow" onclick="openPoseViewer('기본 장꾸 4단 콤보', '인원 2인', ['1컷: 볼콕 귀여운 표정', '2컷: 서로 볼 꼬집기', '3컷: 등대고 힙한 포즈', '4컷: 카메라 향해 손키스'])">
+          <div class="aspect-[4/3] rounded-xl overflow-hidden mb-2 relative">
+            <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80" alt="Pose 1"/>
+            <span class="absolute top-2 left-2 bg-black/60 text-white font-caption text-[10px] px-2 py-0.5 rounded-full">인기 2인</span>
+          </div>
+          <h3 class="font-headline-sm text-label-md font-bold text-on-surface">기본 장꾸 4단 콤보</h3>
+          <p class="font-caption text-caption text-on-surface-variant">친구와 무난하면서 인스타 감성 뿜뿜</p>
+        </div>
+
+        <div class="bg-surface-container-lowest p-3 rounded-2xl border border-black/5 shadow-xs cursor-pointer hover:shadow-md transition-shadow" onclick="openPoseViewer('Y2K 힙스터 거울샷', '인원 1~3인', ['1컷: 선글라스 살짝 내리기', '2컷: 헤드폰 터치 포즈', '3컷: 턱괴고 시크한 눈빛', '4컷: 손가락 V자 선글라스 올려쓰기'])">
+          <div class="aspect-[4/3] rounded-xl overflow-hidden mb-2 relative">
+            <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80" alt="Pose 2"/>
+            <span class="absolute top-2 left-2 bg-secondary text-white font-caption text-[10px] px-2 py-0.5 rounded-full font-bold">HOT Y2K</span>
+          </div>
+          <h3 class="font-headline-sm text-label-md font-bold text-on-surface">Y2K 힙스터 컷</h3>
+          <p class="font-caption text-caption text-on-surface-variant">헤드폰 &amp; 선글라스 착용 전용</p>
+        </div>
+
+        <div class="bg-surface-container-lowest p-3 rounded-2xl border border-black/5 shadow-xs cursor-pointer hover:shadow-md transition-shadow" onclick="openPoseViewer('달달한 커플 하트 4종', '커플 전용', ['1컷: 볼하트 나누기', '2컷: 머리 위 대형 하트', '3컷: 콧대 맞대기', '4컷: 백허그 마주보기'])">
+          <div class="aspect-[4/3] rounded-xl overflow-hidden mb-2 relative">
+            <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=400&q=80" alt="Pose 3"/>
+            <span class="absolute top-2 left-2 bg-pink-500 text-white font-caption text-[10px] px-2 py-0.5 rounded-full">커플 강추</span>
+          </div>
+          <h3 class="font-headline-sm text-label-md font-bold text-on-surface">달달 커플 하트 4종</h3>
+          <p class="font-caption text-caption text-on-surface-variant">연인과 함께 찍는 로맨틱 프레임</p>
+        </div>
+
+        <div class="bg-surface-container-lowest p-3 rounded-2xl border border-black/5 shadow-xs cursor-pointer hover:shadow-md transition-shadow" onclick="openPoseViewer('돈룩업 항공샷 꿀팁', '하이앵글 전용', ['1컷: 카메라 위로 우러러보기', '2컷: 손을 위로 뻗어 카메라 구도', '3컷: 모자 챙 잡고 모던 샷', '4컷: 손가락으로 거울 터치'])">
+          <div class="aspect-[4/3] rounded-xl overflow-hidden mb-2 relative">
+            <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80" alt="Pose 4"/>
+            <span class="absolute top-2 left-2 bg-indigo-600 text-white font-caption text-[10px] px-2 py-0.5 rounded-full">돈룩업 전용</span>
+          </div>
+          <h3 class="font-headline-sm text-label-md font-bold text-on-surface">항공샷 하이앵글 팁</h3>
+          <p class="font-caption text-caption text-on-surface-variant">천장 구도에 맞춘 각도 계산법</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-route" class="view-section flex-col w-full px-margin-mobile pt-space-xs">
+      <div class="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border border-black/5 mb-3 space-y-3 relative">
+        <div class="flex items-center gap-3">
+          <div class="flex flex-col items-center justify-between h-14 py-1">
+            <span class="w-3 h-3 rounded-full bg-primary ring-4 ring-primary/20"></span>
+            <span class="w-0.5 h-6 bg-outline-variant/50 border-dashed border-l border-outline"></span>
+            <span class="material-symbols-outlined text-[20px] text-secondary">location_on</span>
+          </div>
+
+          <div class="flex-1 space-y-2">
+            <div class="flex items-center justify-between bg-surface-container-low px-3 py-2 rounded-xl">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="font-caption text-[11px] text-primary font-bold shrink-0">출발</span>
+                <span class="font-body-sm text-on-surface font-semibold truncate" id="routeStartLabel">내 위치 (강남역 10번 출구)</span>
+              </div>
+              <button onclick="recenterToUserLocation(); updateRouteInfo();" class="text-primary hover:text-primary-container shrink-0" title="현재 위치 갱신">
+                <span class="material-symbols-outlined text-[18px]">my_location</span>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between bg-surface-container-low px-3 py-2 rounded-xl">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="font-caption text-[11px] text-secondary font-bold shrink-0">도착</span>
+                <select id="routeBoothSelect" onchange="onRouteBoothChanged(this.value)" class="bg-transparent font-body-sm text-on-surface font-bold focus:outline-none w-full truncate cursor-pointer">
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-1.5 pt-1 border-t border-surface-container">
+          <button class="route-mode-btn active flex flex-col items-center py-2 rounded-xl bg-primary text-on-primary font-label-sm text-caption font-bold transition-all" data-mode="walk" onclick="switchRouteMode('walk', this)">
+            <span class="material-symbols-outlined text-[20px]">directions_walk</span>
+            <span class="mt-0.5" id="walkTimeBadge">도보 3분</span>
+          </button>
+          <button class="route-mode-btn flex flex-col items-center py-2 rounded-xl bg-surface-container text-on-surface-variant font-label-sm text-caption hover:bg-surface-container-high transition-all" data-mode="transit" onclick="switchRouteMode('transit', this)">
+            <span class="material-symbols-outlined text-[20px]">directions_bus</span>
+            <span class="mt-0.5" id="transitTimeBadge">버스 8분</span>
+          </button>
+          <button class="route-mode-btn flex flex-col items-center py-2 rounded-xl bg-surface-container text-on-surface-variant font-label-sm text-caption hover:bg-surface-container-high transition-all" data-mode="car" onclick="switchRouteMode('car', this)">
+            <span class="material-symbols-outlined text-[20px]">directions_car</span>
+            <span class="mt-0.5" id="carTimeBadge">차량 2분</span>
+          </button>
+          <button class="route-mode-btn flex flex-col items-center py-2 rounded-xl bg-surface-container text-on-surface-variant font-label-sm text-caption hover:bg-surface-container-high transition-all" data-mode="bike" onclick="switchRouteMode('bike', this)">
+            <span class="material-symbols-outlined text-[20px]">pedal_bike</span>
+            <span class="mt-0.5" id="bikeTimeBadge">따릉이 1분</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="relative w-full h-[220px] rounded-2xl overflow-hidden shadow-xs border border-black/5 mb-3">
+        <div id="routeMap" class="w-full h-full"></div>
+        <div class="absolute top-2 right-2 z-20 bg-surface/90 backdrop-blur-md px-3 py-1 rounded-full border border-black/5 font-caption text-caption text-on-surface shadow-sm">
+          📍 <span id="routeDistanceText" class="font-bold text-primary">210m</span> 이동
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 mb-3">
+        <div class="bg-surface-container-lowest p-3 rounded-xl border border-black/5 text-center">
+          <span class="font-caption text-[11px] text-on-surface-variant block">예상 소요 시간</span>
+          <span class="font-headline-sm text-headline-sm text-primary font-bold" id="routeTotalTime">3분</span>
+        </div>
+        <div class="bg-surface-container-lowest p-3 rounded-xl border border-black/5 text-center">
+          <span class="font-caption text-[11px] text-on-surface-variant block">총 거리</span>
+          <span class="font-headline-sm text-headline-sm text-on-surface font-bold" id="routeTotalDist">210 m</span>
+        </div>
+        <div class="bg-surface-container-lowest p-3 rounded-xl border border-black/5 text-center">
+          <span class="font-caption text-[11px] text-on-surface-variant block">소모 칼로리</span>
+          <span class="font-headline-sm text-headline-sm text-emerald-600 font-bold" id="routeCalories">14 kcal</span>
+        </div>
+      </div>
+
+      <div class="bg-surface-container-lowest rounded-2xl p-4 border border-black/5 shadow-xs mb-4">
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-surface-container">
+          <span class="font-headline-sm text-label-lg font-bold text-on-surface flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[18px] text-primary">alt_route</span>
+            턴바이턴 상세 길안내
+          </span>
+          <span class="font-caption text-caption text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">실시간 신호대기 포함</span>
+        </div>
+
+        <div class="space-y-3" id="routeStepsContainer"></div>
+      </div>
+
+      <div class="flex items-center gap-2 pb-6">
+        <button onclick="launchExternalMap('kakao')" class="flex-1 py-3 px-3 rounded-full bg-[#FEE500] text-[#191919] font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+          <span>카카오맵 길찾기</span>
+        </button>
+        <button onclick="launchExternalMap('naver')" class="flex-1 py-3 px-3 rounded-full bg-[#03C75A] text-white font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+          <span>네이버 지도</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="view-detail" class="view-section flex-col w-full pb-10">
+      <div class="p-margin-mobile">
+        <button onclick="switchView('booth-map')" class="inline-flex items-center gap-1 text-primary font-label-md text-label-md mb-2">
+          <span class="material-symbols-outlined text-[18px]">arrow_back</span> 지도 화면으로 돌아가기
+        </button>
+        <div class="bg-surface-container-lowest rounded-2xl p-4 border border-black/5 shadow-sm space-y-3">
+          <h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface" id="detailPageTitle">하루필름 강남대로점</h2>
+          <p class="text-body-sm text-on-surface-variant" id="detailPageAddress">서울 강남구 강남대로 428 1층</p>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 font-bold text-caption" id="detailPageQueue">대기시간: 약 0분 (쾌적)</span>
+            <span class="px-2.5 py-1 rounded bg-primary-fixed text-on-primary-fixed font-bold text-caption" id="detailPageRating">⭐ 4.9 (리뷰 1,280개)</span>
+          </div>
+          <div class="pt-2 border-t border-surface-container">
+            <h4 class="font-bold text-label-md mb-1">구비된 소품 &amp; 편의시설</h4>
+            <div class="flex flex-wrap gap-1.5" id="detailPageBadges">
+              <span class="px-2.5 py-1 rounded-full bg-surface-container text-body-sm">🔌 고데기 / 다이슨 에어랩</span>
+              <span class="px-2.5 py-1 rounded-full bg-surface-container text-body-sm">🪞 파우더룸 조명거울</span>
+              <span class="px-2.5 py-1 rounded-full bg-surface-container text-body-sm">🎀 40 여종 동물 모자 &amp; 안경</span>
+              <span class="px-2.5 py-1 rounded-full bg-surface-container text-body-sm">💳 카드 &amp; 계좌이체 지원</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-album" class="view-section flex-col w-full px-margin-mobile pt-space-xs">
+      <div class="bg-gradient-to-r from-primary/10 to-secondary/10 p-4 rounded-2xl mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">마이 네컷 디지털 앨범 📸</h2>
+          <p class="font-caption text-caption text-on-surface-variant mt-0.5">보관된 모바일 프레임 12개</p>
+        </div>
+        <button onclick="showToast('📷 QR 스캐너가 열렸습니다. 네컷사진 출력물의 QR코드를 비춰주세요')" class="px-3 py-2 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-[16px]">qr_code_scanner</span> QR 스캔
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-surface-container-lowest p-2 rounded-xl shadow-xs border border-black/5 group cursor-pointer" onclick="showToast('🖼️ 하루필름 고화질 원본 원본사진을 다운로드합니다')">
+          <div class="aspect-[3/4] rounded-lg overflow-hidden relative">
+            <img class="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="Saved strip 1" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80"/>
+            <span class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white font-caption text-[10px]">2026.10.12</span>
+          </div>
+          <div class="mt-2 px-1 flex items-center justify-between">
+            <span class="font-label-sm text-label-sm font-bold text-on-surface">하루필름 강남</span>
+            <span class="material-symbols-outlined text-[16px] text-on-surface-variant">download</span>
+          </div>
+        </div>
+
+        <div class="bg-surface-container-lowest p-2 rounded-xl shadow-xs border border-black/5 group cursor-pointer" onclick="showToast('🖼️ 돈룩업 항공샷 원본 사진을 다운로드합니다')">
+          <div class="aspect-[3/4] rounded-lg overflow-hidden relative">
+            <img class="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="Saved strip 2" src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=400&q=80"/>
+            <span class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white font-caption text-[10px]">2026.09.28</span>
+          </div>
+          <div class="mt-2 px-1 flex items-center justify-between">
+            <span class="font-label-sm text-label-sm font-bold text-on-surface">돈룩업 연남</span>
+            <span class="material-symbols-outlined text-[16px] text-on-surface-variant">download</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="fixed inset-0 z-50 bg-on-surface/60 backdrop-blur-sm hidden flex-col justify-end transition-opacity duration-300" id="poseViewerModal">
+    <div class="w-full max-w-lg mx-auto bg-surface rounded-t-3xl p-margin-mobile pb-28 space-y-space-md shadow-2xl border-t border-white/20">
+      <div class="w-10 h-1 bg-outline-variant/60 rounded-full mx-auto"></div>
+      
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="inline-block px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-semibold mb-1" id="modalCategory">포즈 가이드</span>
+          <h2 class="font-headline-md text-headline-md text-on-surface font-bold" id="modalTitle">기본 장꾸 4단 콤보</h2>
+        </div>
+        <button class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface hover:bg-surface-container-highest transition-colors" onclick="closePoseViewer()">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <div class="bg-surface-container-lowest p-space-sm rounded-2xl shadow-xs border border-black/5 space-y-space-xs">
+        <div class="flex items-center justify-between pb-1 border-b border-surface-container">
+          <span class="font-label-md text-label-md text-primary font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">timer</span> 부스 내 거치대용 4컷 순서 가이드
+          </span>
+          <span class="font-caption text-caption text-on-surface-variant">10초 자동 진행</span>
+        </div>
+        <div class="grid grid-cols-1 gap-2 pt-1" id="modalStepsList"></div>
+      </div>
+
+      <div class="flex items-center gap-2 pt-1">
+        <button class="flex-1 py-3 rounded-full bg-surface-container-highest text-on-surface font-label-lg text-label-lg active:scale-95 transition-transform" onclick="closePoseViewer()">
+          닫기
+        </button>
+        <button class="flex-1 py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform" onclick="closePoseViewer(); showToast('📱 화면 유지 모드가 활성화되었습니다. 부스 거치대에 스마트폰을 올려놓으세요!');">
+          <span class="material-symbols-outlined text-[18px]">screen_rotation</span>
+          <span>화면 켜짐 유지</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed bottom-24 inset-x-0 z-50 flex flex-col items-center gap-2 pointer-events-none px-margin-mobile"></div>
+
+  <nav class="fixed bottom-0 inset-x-0 z-40 pb-safe px-margin-mobile pointer-events-none">
+    <div class="pointer-events-auto mb-3 mx-auto max-w-md bg-surface-container-lowest/95 backdrop-blur-xl rounded-full shadow-[0_12px_32px_rgba(99,14,212,0.18),0_2px_8px_rgba(0,0,0,0.08)] px-space-xs py-1.5 flex items-center justify-between border border-white/40">
+      
+      <button class="nav-tab-btn flex-1 flex flex-col items-center justify-center min-h-[44px] py-1 transition-all text-primary font-bold" data-target="view-map" onclick="switchView('booth-map')">
+        <span class="material-symbols-outlined text-[20px]">map</span>
+        <span class="font-label-sm text-[11px] mt-0.5">부스 지도</span>
+      </button>
+
+      <button class="nav-tab-btn flex-1 flex flex-col items-center justify-center min-h-[44px] py-1 text-on-surface-variant transition-all hover:text-on-surface" data-target="view-route" onclick="switchView('booth-route')">
+        <span class="material-symbols-outlined text-[20px]">near_me</span>
+        <span class="font-label-sm text-[11px] mt-0.5">길찾기</span>
+      </button>
+
+      <button class="nav-tab-btn flex-1 flex flex-col items-center justify-center min-h-[44px] py-1 text-on-surface-variant transition-all hover:text-on-surface" data-target="view-search" onclick="switchView('booth-search')">
+        <span class="material-symbols-outlined text-[20px]">storefront</span>
+        <span class="font-label-sm text-[11px] mt-0.5">부스 탐색</span>
+      </button>
+
+      <button class="nav-tab-btn flex-1 flex flex-col items-center justify-center min-h-[44px] py-1 text-on-surface-variant transition-all hover:text-on-surface" data-target="view-pose" onclick="switchView('pose-gallery')">
+        <span class="material-symbols-outlined text-[20px]">photo_camera</span>
+        <span class="font-label-sm text-[11px] mt-0.5">포즈 팁</span>
+      </button>
+
+      <button class="nav-tab-btn flex-1 flex flex-col items-center justify-center min-h-[44px] py-1 text-on-surface-variant transition-all hover:text-on-surface" data-target="view-album" onclick="switchView('my-album')">
+        <span class="material-symbols-outlined text-[20px]">photo_library</span>
+        <span class="font-label-sm text-[11px] mt-0.5">내 앨범</span>
+      </button>
+
+    </div>
+  </nav>
+
+  <script>
+    const REGION_COORDINATES = {
+      gangnam: { name: '강남역 10번 출구', lat: 37.4979, lng: 127.0276, zoom: 16 },
+      hongdae: { name: '홍대입구역 9번 출구', lat: 37.5563, lng: 126.9228, zoom: 16 },
+      seongsu: { name: '성수역 3번 출구', lat: 37.5445, lng: 127.0560, zoom: 16 },
+      itaewon: { name: '이태원역 1번 출구', lat: 37.5345, lng: 126.9940, zoom: 16 }
+    };
+
+    const BOOTH_DATABASE = [
+      {
+        id: 'haru-gangnam',
+        brand: 'haru',
+        brandName: '하루필름',
+        brandColor: '#00A3FF',
+        badgeBg: 'bg-[#00A3FF]/10',
+        badgeText: 'text-[#00A3FF]',
+        title: '하루필름 강남대로점',
+        address: '서울 강남구 강남대로 428 1층',
+        lat: 37.5002,
+        lng: 127.0270,
+        region: 'gangnam',
+        distance: '120m',
+        rating: '4.9',
+        reviews: '1,280+',
+        status: '대기 없음 (2대 여유)',
+        statusClass: 'text-emerald-600 bg-emerald-50',
+        badges: ['⚡ 다이슨 에어랩 구비', '🩵 시그니처 딥블루 4룸', '👒 Y2K 소품'],
+        tags: ['airwrap', 'cooltone', 'props'],
+        img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80'
+      },
+      {
+        id: 'life4-gangnam',
+        brand: 'life4',
+        brandName: '인생네컷',
+        brandColor: '#FF2D78',
+        badgeBg: 'bg-[#FF2D78]/10',
+        badgeText: 'text-[#FF2D78]',
+        title: '인생네컷 강남역점',
+        address: '서울 강남구 테헤란로1길 10',
+        lat: 37.4988,
+        lng: 127.0285,
+        region: 'gangnam',
+        distance: '210m',
+        rating: '4.8',
+        reviews: '2,150+',
+        status: '대기 5분 (1대 여유)',
+        statusClass: 'text-amber-600 bg-amber-50',
+        badges: ['🎀 소품 50종 이상', '📸 디즈니 한정 프레임', '✨ 최고 화질'],
+        tags: ['props', 'new'],
+        img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=300&q=80'
+      },
+      {
+        id: 'photoism-gangnam',
+        brand: 'photoism',
+        brandName: '포토이즘',
+        brandColor: '#1F2937',
+        badgeBg: 'bg-black/10',
+        badgeText: 'text-gray-800',
+        title: '포토이즘 박스 강남점',
+        address: '서울 강남구 강남대로102길 14',
+        lat: 37.5015,
+        lng: 127.0261,
+        region: 'gangnam',
+        distance: '340m',
+        rating: '4.7',
+        reviews: '980+',
+        status: '대기 없음',
+        statusClass: 'text-emerald-600 bg-emerald-50',
+        badges: ['🖤 모노톤 시크 감성', '📷 박스형 단독 스튜디오'],
+        tags: ['cooltone'],
+        img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80'
+      },
+      {
+        id: 'dontlook-gangnam',
+        brand: 'dontlook',
+        brandName: '돈룩업',
+        brandColor: '#FF5722',
+        badgeBg: 'bg-[#FF5722]/10',
+        badgeText: 'text-[#FF5722]',
+        title: '돈룩업 강남점',
+        address: '서울 강남구 강남대로98길 12',
+        lat: 37.4998,
+        lng: 127.0282,
+        region: 'gangnam',
+        distance: '280m',
+        rating: '4.9',
+        reviews: '1,540+',
+        status: '대기 10분',
+        statusClass: 'text-amber-600 bg-amber-50',
+        badges: ['🔴 항공샷 하이앵글', '🕶️ 선글라스 렌탈'],
+        tags: ['cooltone', 'new'],
+        img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+      },
+      {
+        id: 'monomansion-hongdae',
+        brand: 'monomansion',
+        brandName: '모노맨션',
+        brandColor: '#92400E',
+        badgeBg: 'bg-[#92400E]/10',
+        badgeText: 'text-[#92400E]',
+        title: '모노맨션 홍대입구점',
+        address: '서울 마포구 어울마당로 112',
+        lat: 37.5558,
+        lng: 126.9235,
+        region: 'hongdae',
+        distance: '150m',
+        rating: '4.8',
+        reviews: '890+',
+        status: '대기 없음',
+        statusClass: 'text-emerald-600 bg-emerald-50',
+        badges: ['🤎 빈티지 아날로그 필터', '💡 자연광 파우더룸'],
+        tags: ['props'],
+        img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80'
+      },
+      {
+        id: 'haru-seongsu',
+        brand: 'haru',
+        brandName: '하루필름',
+        brandColor: '#00A3FF',
+        badgeBg: 'bg-[#00A3FF]/10',
+        badgeText: 'text-[#00A3FF]',
+        title: '하루필름 성수점',
+        address: '서울 성동구 연무장길 38',
+        lat: 37.5438,
+        lng: 127.0548,
+        region: 'seongsu',
+        distance: '180m',
+        rating: '4.9',
+        reviews: '1,120+',
+        status: '대기 없음',
+        statusClass: 'text-emerald-600 bg-emerald-50',
+        badges: ['⚡ 에어랩 구비', '🩵 딥블루 부스'],
+        tags: ['airwrap', 'cooltone'],
+        img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=300&q=80'
+      }
+    ];
+
+    let leafletMap = null;
+    let routeMap = null;
+    let mapMarkers = [];
+    let selectedBoothId = 'haru-gangnam';
+    let currentBrandFilter = 'all';
+    let currentActiveTags = new Set();
+    let currentRegion = 'gangnam';
+    let currentRouteMode = 'walk';
+    let routePolyline = null;
+    let routeStartMarker = null;
+    let routeEndMarker = null;
+    let userPulseMarker = null;
+
+    window.addEventListener('load', () => {
+      initLeafletMap();
+      renderSearchCards();
+      populateRouteSelectOptions();
+    });
+
+    function initLeafletMap() {
+      const gangnam = REGION_COORDINATES['gangnam'];
+      
+      leafletMap = L.map('leafletMap', {
+        center: [gangnam.lat, gangnam.lng],
+        zoom: gangnam.zoom,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+      }).addTo(leafletMap);
+
+      leafletMap.on('zoomend', () => {
+        const currentZoom = leafletMap.getZoom();
+        const badge = document.getElementById('zoomScaleBadge');
+        if (badge) {
+          badge.textContent = `줌 Level: ${currentZoom} (${getScaleDescription(currentZoom)})`;
+        }
+      });
+
+      leafletMap.on('dragend', () => {
+        const researchContainer = document.getElementById('researchAreaBtnContainer');
+        if (researchContainer) {
+          researchContainer.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+          researchContainer.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
+        }
+      });
+
+      renderUserPulseMarker(gangnam.lat, gangnam.lng);
+      renderMarkersOnMap();
+    }
+
+    function openBoothDrawer() {
+      const drawer = document.getElementById('boothPopupDrawer');
+      if (drawer) {
+        drawer.classList.remove('translate-y-full', 'opacity-0', 'pointer-events-none');
+        drawer.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+      }
+    }
+
+    function closeBoothDrawer() {
+      const drawer = document.getElementById('boothPopupDrawer');
+      if (drawer) {
+        drawer.classList.add('translate-y-full', 'opacity-0', 'pointer-events-none');
+        drawer.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+      }
+    }
+
+    function renderUserPulseMarker(lat, lng) {
+      if (!leafletMap) return;
+      if (userPulseMarker) {
+        leafletMap.removeLayer(userPulseMarker);
+      }
+      const pulseIcon = L.divIcon({
+        className: 'user-pulse-marker',
+        html: `
+          <div class="relative flex items-center justify-center w-8 h-8">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-4 w-4 bg-primary ring-4 ring-white shadow-md"></span>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+      userPulseMarker = L.marker([lat, lng], { icon: pulseIcon }).addTo(leafletMap);
+    }
+
+    function renderMarkersOnMap() {
+      if (!leafletMap) return;
+      
+      mapMarkers.forEach(m => leafletMap.removeLayer(m));
+      mapMarkers = [];
+
+      let visibleCount = 0;
+
+      BOOTH_DATABASE.forEach(booth => {
+        const matchesBrand = currentBrandFilter === 'all' || booth.brand === currentBrandFilter;
+        const matchesTags = currentActiveTags.size === 0 || Array.from(currentActiveTags).every(t => booth.tags.includes(t));
+
+        if (matchesBrand && matchesTags) {
+          visibleCount++;
+          const markerIcon = L.divIcon({
+            className: 'booth-marker-pin',
+            html: `
+              <div class="flex items-center gap-1 px-2.5 py-1 rounded-full shadow-lg text-white font-bold text-xs ring-2 ring-white transition-transform hover:scale-110 active:scale-95" style="background-color: ${booth.brandColor};">
+                <span>${booth.brandName}</span>
+              </div>
+            `,
+            iconSize: [80, 28],
+            iconAnchor: [40, 14]
+          });
+
+          const marker = L.marker([booth.lat, booth.lng], { icon: markerIcon }).addTo(leafletMap);
+          
+          marker.on('click', () => {
+            selectMapBooth(booth.id);
+            leafletMap.panTo([booth.lat, booth.lng], { animate: true, duration: 0.5 });
+          });
+
+          mapMarkers.push(marker);
+        }
+      });
+
+      const totalElem = document.getElementById('totalBoothCount');
+      if (totalElem) totalElem.textContent = visibleCount;
+    }
+
+    function getScaleDescription(zoom) {
+      if (zoom >= 18) return '상세 매장뷰';
+      if (zoom >= 16) return '도로/건물뷰';
+      if (zoom >= 14) return '동/상권 전체뷰';
+      return '광역 도시뷰';
+    }
+
+    function zoomMap(delta) {
+      if (leafletMap) {
+        leafletMap.setZoom(leafletMap.getZoom() + delta);
+      }
+    }
+
+    function recenterToUserLocation() {
+      const coord = REGION_COORDINATES[currentRegion] || REGION_COORDINATES['gangnam'];
+      if (leafletMap) {
+        leafletMap.flyTo([coord.lat, coord.lng], coord.zoom, { duration: 0.8 });
+      }
+      renderUserPulseMarker(coord.lat, coord.lng);
+      showToast(`📍 내 위치(${coord.name})로 지도를 이동했습니다`);
+    }
+
+    function toggleFullscreenMap() {
+      const viewport = document.getElementById('mapViewport');
+      const icon = document.getElementById('fullscreenIcon');
+      if (!viewport) return;
+
+      if (viewport.classList.contains('min-h-[460px]')) {
+        viewport.classList.remove('h-[calc(100vh-210px)]', 'min-h-[460px]');
+        viewport.classList.add('h-[calc(100vh-140px)]');
+        if (icon) icon.textContent = 'close_fullscreen';
+        showToast('📺 지도 전체화면 확대');
+      } else {
+        viewport.classList.remove('h-[calc(100vh-140px)]');
+        viewport.classList.add('h-[calc(100vh-210px)]', 'min-h-[460px]');
+        if (icon) icon.textContent = 'open_in_full';
+        showToast('📺 지도 원래 크기로 복원');
+      }
+      setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 300);
+    }
+
+    function triggerAreaResearch() {
+      const researchContainer = document.getElementById('researchAreaBtnContainer');
+      if (researchContainer) {
+        researchContainer.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+        researchContainer.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+      }
+      renderMarkersOnMap();
+      showToast('🔍 현 지도 영역 내 부스를 재탐색했습니다');
+    }
+
+    function flyToRegion(regionKey) {
+      currentRegion = regionKey;
+      const target = REGION_COORDINATES[regionKey];
+      if (!target) return;
+
+      document.querySelectorAll('.region-jump-btn').forEach(btn => {
+        if (btn.dataset.region === regionKey) {
+          btn.classList.add('bg-primary', 'text-on-primary', 'active');
+          btn.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+        } else {
+          btn.classList.remove('bg-primary', 'text-on-primary', 'active');
+          btn.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+        }
+      });
+
+      const activeRegionElem = document.getElementById('activeRegionName');
+      if (activeRegionElem) activeRegionElem.textContent = target.name.split(' ')[0];
+
+      const locLabel = document.getElementById('locationLabel');
+      if (locLabel) locLabel.textContent = target.name;
+
+      if (leafletMap) {
+        leafletMap.flyTo([target.lat, target.lng], target.zoom, { duration: 1.0 });
+      }
+
+      renderUserPulseMarker(target.lat, target.lng);
+
+      const boothInRegion = BOOTH_DATABASE.find(b => b.region === regionKey);
+      if (boothInRegion) {
+        selectMapBooth(boothInRegion.id);
+      }
+
+      showToast(`🚀 ${target.name} 주요 상권으로 이동했습니다`);
+    }
+
+    function filterBrand(brandKey, elem) {
+      currentBrandFilter = brandKey;
+      document.querySelectorAll('.brand-chip').forEach(chip => {
+        chip.classList.remove('bg-primary', 'text-on-primary', 'active');
+        chip.classList.add('bg-surface-container-lowest', 'text-on-surface');
+      });
+      elem.classList.add('bg-primary', 'text-on-primary', 'active');
+      elem.classList.remove('bg-surface-container-lowest', 'text-on-surface');
+
+      renderMarkersOnMap();
+      renderSearchCards();
+    }
+
+    function toggleTagFilter(elem, tag) {
+      if (currentActiveTags.has(tag)) {
+        currentActiveTags.delete(tag);
+        elem.classList.remove('bg-primary', 'text-on-primary');
+        elem.classList.add('bg-surface-container-high/80', 'text-on-surface-variant');
+      } else {
+        currentActiveTags.add(tag);
+        elem.classList.add('bg-primary', 'text-on-primary');
+        elem.classList.remove('bg-surface-container-high/80', 'text-on-surface-variant');
+      }
+
+      renderMarkersOnMap();
+      renderSearchCards();
+    }
+
+    function filterSearchList(query) {
+      renderSearchCards(query);
+    }
+
+    function renderSearchCards(filterQuery = '') {
+      const container = document.getElementById('searchCardsList');
+      if (!container) return;
+
+      const q = filterQuery.toLowerCase().trim();
+
+      const filtered = BOOTH_DATABASE.filter(b => {
+        const matchesBrand = currentBrandFilter === 'all' || b.brand === currentBrandFilter;
+        const matchesTags = currentActiveTags.size === 0 || Array.from(currentActiveTags).every(t => b.tags.includes(t));
+        const matchesQuery = !q || b.title.toLowerCase().includes(q) || b.address.toLowerCase().includes(q) || b.badges.some(bg => bg.toLowerCase().includes(q));
+        return matchesBrand && matchesTags && matchesQuery;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-on-surface-variant">
+            <span class="material-symbols-outlined text-[48px] opacity-40 mb-2">search_off</span>
+            <p class="font-body-md">조건에 일치하는 포토부스가 없습니다.</p>
+            <p class="font-caption text-caption text-outline">필터를 변경하거나 검색어를 재입력 해보세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(booth => `
+        <div class="bg-surface-container-lowest p-4 rounded-2xl shadow-xs border border-black/5 hover:border-primary/30 transition-all flex flex-col gap-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded ${booth.badgeBg} ${booth.badgeText} font-headline-sm text-caption font-bold">${booth.brandName}</span>
+                <span class="font-caption text-caption text-on-surface-variant">${booth.distance}</span>
+              </div>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold mt-1 truncate">${booth.title}</h3>
+              <p class="font-body-sm text-caption text-on-surface-variant truncate">${booth.address}</p>
+            </div>
+            <img src="${booth.img}" alt="${booth.title}" class="w-16 h-16 rounded-xl object-cover shrink-0 shadow-xs cursor-pointer" onclick="selectMapBooth('${booth.id}'); switchView('booth-map');"/>
+          </div>
+
+          <div class="flex flex-wrap gap-1">
+            ${booth.badges.map(bg => `<span class="px-2 py-0.5 rounded-md bg-surface-container-low font-caption text-[11px] text-on-surface-variant">${bg}</span>`).join('')}
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-surface-container">
+            <span class="font-label-sm text-caption ${booth.statusClass} px-2 py-0.5 rounded font-bold">${booth.status}</span>
+            <div class="flex items-center gap-2">
+              <button onclick="selectMapBooth('${booth.id}'); switchView('booth-map');" class="px-3 py-1.5 rounded-full bg-surface-container font-label-sm text-label-sm flex items-center gap-1 hover:bg-surface-container-high transition-colors">
+                <span class="material-symbols-outlined text-[15px]">info</span>
+                <span>팝업 정보</span>
+              </button>
+              <button onclick="openRouteFinder('${booth.id}')" class="px-3 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold shadow-xs hover:bg-primary-container transition-colors">
+                길찾기
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function initRouteMap() {
+      if (routeMap) return;
+
+      const coord = REGION_COORDINATES[currentRegion] || REGION_COORDINATES['gangnam'];
+      routeMap = L.map('routeMap', {
+        center: [coord.lat, coord.lng],
+        zoom: 16,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+      }).addTo(routeMap);
+    }
+
+    function populateRouteSelectOptions() {
+      const select = document.getElementById('routeBoothSelect');
+      if (!select) return;
+
+      select.innerHTML = BOOTH_DATABASE.map(b => `
+        <option value="${b.id}" ${b.id === selectedBoothId ? 'selected' : ''}>
+          [${b.brandName}] ${b.title} (${b.distance})
+        </option>
+      `).join('');
+    }
+
+    function selectMapBooth(boothId) {
+      selectedBoothId = boothId;
+      const booth = BOOTH_DATABASE.find(b => b.id === boothId);
+      if (!booth) return;
+
+      document.getElementById('selectedBrandBadge').textContent = booth.brandName;
+      document.getElementById('selectedBrandBadge').className = `px-2.5 py-0.5 rounded-md ${booth.badgeBg} ${booth.badgeText} font-headline-sm text-label-sm font-bold`;
+      document.getElementById('selectedBoothTitle').textContent = booth.title;
+      document.getElementById('selectedDistance').innerHTML = `<span class="material-symbols-outlined text-[12px] text-primary" style="font-variation-settings: 'FILL' 1;">near_me</span> ${booth.distance}`;
+      document.getElementById('selectedRating').textContent = booth.rating;
+      document.getElementById('selectedReviews').textContent = `방문 리뷰 ${booth.reviews}`;
+      
+      const statusElem = document.getElementById('selectedStatus');
+      statusElem.textContent = booth.status;
+      statusElem.className = `font-label-sm text-label-sm px-2 py-0.5 rounded font-bold ${booth.statusClass}`;
+
+      const badgesContainer = document.getElementById('selectedBadges');
+      badgesContainer.innerHTML = booth.badges.map(b => `<span class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-on-surface-variant">${b}</span>`).join('');
+
+      // 상세페이지 텍스트도 매칭 업데
+      const detailTitle = document.getElementById('detailPageTitle');
+      if (detailTitle) detailTitle.textContent = booth.title;
+      const detailAddress = document.getElementById('detailPageAddress');
+      if (detailAddress) detailAddress.textContent = booth.address;
+
+      const select = document.getElementById('routeBoothSelect');
+      if (select) select.value = boothId;
+
+      openBoothDrawer();
+    }
+
+    function openRouteFinderFromSelected() {
+      openRouteFinder(selectedBoothId);
+    }
+
+    function openRouteFinder(boothId) {
+      selectedBoothId = boothId || selectedBoothId;
+      const select = document.getElementById('routeBoothSelect');
+      if (select) select.value = selectedBoothId;
+
+      switchView('booth-route');
+    }
+
+    function onRouteBoothChanged(boothId) {
+      selectedBoothId = boothId;
+      updateRouteInfo();
+    }
+
+    function switchRouteMode(mode, btn) {
+      currentRouteMode = mode;
+      document.querySelectorAll('.route-mode-btn').forEach(b => {
+        b.classList.remove('bg-primary', 'text-on-primary', 'active');
+        b.classList.add('bg-surface-container', 'text-on-surface-variant');
+      });
+      btn.classList.add('bg-primary', 'text-on-primary', 'active');
+      btn.classList.remove('bg-surface-container', 'text-on-surface-variant');
+
+      updateRouteInfo();
+    }
+
+    function updateRouteInfo() {
+      const startCoord = REGION_COORDINATES[currentRegion] || REGION_COORDINATES['gangnam'];
+      const destBooth = BOOTH_DATABASE.find(b => b.id === selectedBoothId) || BOOTH_DATABASE[0];
+
+      document.getElementById('routeStartLabel').textContent = `내 위치 (${startCoord.name})`;
+
+      const lat1 = startCoord.lat;
+      const lng1 = startCoord.lng;
+      const lat2 = destBooth.lat;
+      const lng2 = destBooth.lng;
+
+      const dLat = (lat2 - lat1) * 111000;
+      const dLng = (lng2 - lng1) * 88000;
+      const totalMeters = Math.max(80, Math.round(Math.sqrt(dLat * dLat + dLng * dLng)));
+
+      let timeText = '';
+      let kcal = Math.round(totalMeters * 0.065);
+      if (currentRouteMode === 'walk') {
+        const mins = Math.max(1, Math.round(totalMeters / 70));
+        timeText = `${mins}분`;
+      } else if (currentRouteMode === 'transit') {
+        const mins = Math.max(4, Math.round(totalMeters / 180) + 3);
+        timeText = `${mins}분`;
+      } else if (currentRouteMode === 'car') {
+        const mins = Math.max(2, Math.round(totalMeters / 250) + 1);
+        timeText = `${mins}분`;
+      } else {
+        const mins = Math.max(1, Math.round(totalMeters / 150));
+        timeText = `${mins}분`;
+      }
+
+      document.getElementById('routeTotalTime').textContent = timeText;
+      document.getElementById('routeTotalDist').textContent = `${totalMeters} m`;
+      document.getElementById('routeDistanceText').textContent = `${totalMeters}m`;
+      document.getElementById('routeCalories').textContent = `${kcal} kcal`;
+
+      renderRouteSteps(startCoord.name, destBooth.title, totalMeters);
+
+      initRouteMap();
+      if (routeMap) {
+        setTimeout(() => {
+          routeMap.invalidateSize();
+
+          if (routePolyline) routeMap.removeLayer(routePolyline);
+          if (routeStartMarker) routeMap.removeLayer(routeStartMarker);
+          if (routeEndMarker) routeMap.removeLayer(routeEndMarker);
+
+          const midLat1 = lat1 + (lat2 - lat1) * 0.4 + 0.0003;
+          const midLng1 = lng1 + (lng2 - lng1) * 0.2;
+          const midLat2 = lat1 + (lat2 - lat1) * 0.8;
+          const midLng2 = lng1 + (lng2 - lng1) * 0.85 + 0.0002;
+
+          const polylineCoords = [
+            [lat1, lng1],
+            [midLat1, midLng1],
+            [midLat2, midLng2],
+            [lat2, lng2]
+          ];
+
+          routePolyline = L.polyline(polylineCoords, {
+            color: '#630ed4',
+            weight: 5,
+            opacity: 0.85,
+            dashArray: currentRouteMode === 'transit' ? '8, 8' : null
+          }).addTo(routeMap);
+
+          const startIcon = L.divIcon({
+            className: 'route-start-pin',
+            html: `<div class="w-6 h-6 rounded-full bg-primary text-white font-bold text-[11px] flex items-center justify-center shadow-lg ring-2 ring-white">출발</div>`,
+            iconSize: [24, 24], iconAnchor: [12, 12]
+          });
+          const endIcon = L.divIcon({
+            className: 'route-end-pin',
+            html: `<div class="w-6 h-6 rounded-full bg-secondary text-white font-bold text-[11px] flex items-center justify-center shadow-lg ring-2 ring-white">도착</div>`,
+            iconSize: [24, 24], iconAnchor: [12, 12]
+          });
+
+          routeStartMarker = L.marker([lat1, lng1], { icon: startIcon }).addTo(routeMap);
+          routeEndMarker = L.marker([lat2, lng2], { icon: endIcon }).addTo(routeMap);
+
+          routeMap.fitBounds(L.latLngBounds(polylineCoords), { padding: [30, 30] });
+        }, 150);
+      }
+    }
+
+    function renderRouteSteps(startName, destName, distance) {
+      const container = document.getElementById('routeStepsContainer');
+      if (!container) return;
+
+      const step1Dist = Math.round(distance * 0.35);
+      const step2Dist = Math.round(distance * 0.45);
+      const step3Dist = Math.max(20, distance - step1Dist - step2Dist);
+
+      container.innerHTML = `
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-primary-fixed text-on-primary-fixed font-bold text-[12px] flex items-center justify-center shrink-0 mt-0.5">1</div>
+          <div class="flex-1">
+            <h4 class="font-headline-sm text-label-md font-bold text-on-surface">${startName} 출발</h4>
+            <p class="font-body-sm text-caption text-on-surface-variant mt-0.5">횡단보도 건너 메인 상점가 도로 방향 직진 (${step1Dist}m)</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-primary-fixed text-on-primary-fixed font-bold text-[12px] flex items-center justify-center shrink-0 mt-0.5">2</div>
+          <div class="flex-1">
+            <h4 class="font-headline-sm text-label-md font-bold text-on-surface">우회전 및 골목 진입</h4>
+            <p class="font-body-sm text-caption text-on-surface-variant mt-0.5">올리브영 매장 모퉁이에서 우측 골목으로 우회전 (${step2Dist}m)</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-secondary-fixed text-on-secondary-fixed font-bold text-[12px] flex items-center justify-center shrink-0 mt-0.5">3</div>
+          <div class="flex-1">
+            <h4 class="font-headline-sm text-label-md font-bold text-on-surface">${destName} 도착</h4>
+            <p class="font-body-sm text-caption text-on-surface-variant mt-0.5">건물 1층 시그니처 입구 도착 (${step3Dist}m)</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function launchExternalMap(app) {
+      const destBooth = BOOTH_DATABASE.find(b => b.id === selectedBoothId) || BOOTH_DATABASE[0];
+      if (app === 'kakao') {
+        window.open(`https://map.kakao.com/link/to/${encodeURIComponent(destBooth.title)},${destBooth.lat},${destBooth.lng}`, '_blank');
+        showToast('🗺️ 카카오맵 경로 안내로 연결됩니다');
+      } else {
+        window.open(`https://map.naver.com/v5/directions/-/-/-/metro?c=14135000.0000000,4518000.0000000,15,0,0,0,dh`, '_blank');
+        showToast('🗺️ 네이버 지도 경로 안내로 연결됩니다');
+      }
+    }
+
+    function switchView(viewName) {
+      const mapSection = document.getElementById('view-map');
+      const searchSection = document.getElementById('view-search');
+      const poseSection = document.getElementById('view-pose');
+      const detailSection = document.getElementById('view-detail');
+      const albumSection = document.getElementById('view-album');
+      const routeSection = document.getElementById('view-route');
+
+      const backBtn = document.getElementById('navBackBtn');
+
+      const allSections = [mapSection, searchSection, poseSection, detailSection, albumSection, routeSection];
+      allSections.forEach(s => s?.classList.remove('active'));
+
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        btn.classList.remove('text-primary', 'font-bold');
+        btn.classList.add('text-on-surface-variant');
+      });
+
+      if (viewName === 'booth-map') {
+        mapSection.classList.add('active');
+        document.querySelector('[data-target="view-map"]')?.classList.add('text-primary', 'font-bold');
+        if (backBtn) backBtn.classList.add('hidden');
+        setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 200);
+      } else {
+        if (backBtn) backBtn.classList.remove('hidden');
+
+        if (viewName === 'booth-route') {
+          routeSection.classList.add('active');
+          document.querySelector('[data-target="view-route"]')?.classList.add('text-primary', 'font-bold');
+          updateRouteInfo();
+        } else if (viewName === 'booth-search') {
+          searchSection.classList.add('active');
+          document.querySelector('[data-target="view-search"]')?.classList.add('text-primary', 'font-bold');
+        } else if (viewName === 'pose-gallery') {
+          poseSection.classList.add('active');
+          document.querySelector('[data-target="view-pose"]')?.classList.add('text-primary', 'font-bold');
+        } else if (viewName === 'booth-detail') {
+          detailSection.classList.add('active');
+        } else if (viewName === 'my-album') {
+          albumSection.classList.add('active');
+          document.querySelector('[data-target="view-album"]')?.classList.add('text-primary', 'font-bold');
+        }
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openPoseViewer(title, category, steps) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalCategory').textContent = category;
+      
+      const list = document.getElementById('modalStepsList');
+      list.innerHTML = steps.map((s, idx) => `
+        <div class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-low font-body-sm text-on-surface">
+          <span class="w-6 h-6 rounded-full bg-primary text-on-primary font-bold text-[12px] flex items-center justify-center shrink-0">${idx + 1}</span>
+          <span>${s}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('poseViewerModal').classList.remove('hidden');
+      document.getElementById('poseViewerModal').classList.add('flex');
+    }
+
+    function closePoseViewer() {
+      document.getElementById('poseViewerModal').classList.add('hidden');
+      document.getElementById('poseViewerModal').classList.remove('flex');
+    }
+
+    function toggleFavorite(btn) {
+      btn.classList.toggle('text-secondary');
+      showToast('⭐ 즐겨찾는 부스 목록에 등록되었습니다!');
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast-animate px-4 py-2.5 rounded-full bg-inverse-surface/90 text-inverse-on-surface font-label-md text-label-md shadow-xl backdrop-blur-md flex items-center gap-2 border border-white/10 pointer-events-auto';
+      toast.innerHTML = `<span>${message}</span>`;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
